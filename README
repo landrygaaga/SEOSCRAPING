@@ -1,0 +1,6 @@
+Installation du projet
+1)Création du projet avec Python
+2)Installation de Django avec la commande pip install Django
+3)Installation de DjangoRest avec la commande pip install djangorestframework
+4)Création du projet avec la commande django-admin startproject SeoProject
+5)Création de l'application avec la commande python manage.py startapp SeoProjectApp
