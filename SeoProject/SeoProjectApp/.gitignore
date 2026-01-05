@@ -1,0 +1,42 @@
+# Byte-code files
+*.pyc
+__pycache__/
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+
+# Media and static files (generated or collected)
+media/
+staticfiles/
+
+# IDE-specific files (e.g., VS Code, PyCharm)
+.vscode/
+.idea/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.flaskenv
+
+# Log files
+*.log
+
+# Test coverage reports
+.coverage
+htmlcov/
+
+# Build artifacts (if applicable)
+build/
+dist/
+*.egg-info/
+
+
+# Django
+db.sqlite3
