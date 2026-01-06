@@ -177,31 +177,57 @@ class Parsers:
             return {}
 
     # SCORE SEO 
-
     def calculer_score_seo(self, data):
-        details = {"technique": 0, "contenu": 0, "structure": 0}
+        details = {
+            "technique": 0,
+            "contenu": 0,
+            "structure": 0
+        }
 
+        # ---------- TECHNIQUE (max 40) ----------
         if data.get("is_secure"):
             details["technique"] += 10
-        if data.get("temps_reponse_ms", 2000) < 1000:
-            details["technique"] += 20
 
+        temps = data.get("temps_reponse_ms", 2000)
+        if temps < 500:
+            details["technique"] += 30
+        elif temps < 1000:
+            details["technique"] += 20
+        elif temps < 2000:
+            details["technique"] += 10
+
+        # ---------- STRUCTURE (max 30) ----------
         h1_count = data.get("paragraphes", {}).get("h1_count", 0)
         if h1_count == 1:
             details["structure"] += 20
         elif h1_count > 1:
-            details["structure"] += 5
+            details["structure"] += 10
 
-        if data.get("word_count", 0) > 600:
-            details["contenu"] += 20
+        h2_count = data.get("paragraphes", {}).get("h2_count", 0)
+        if h2_count >= 2:
+            details["structure"] += 10
+
+        # ---------- CONTENU (max 30) ----------
+        word_count = data.get("word_count", 0)
+        if word_count > 300:
+            details["contenu"] += 10
+        if word_count > 600:
+            details["contenu"] += 10
 
         title = (data.get("titre") or "").lower()
         for kw in data.get("top_keywords", [])[:3]:
             if kw.lower() in title:
-                details["contenu"] += 15
+                details["contenu"] += 10
                 break
 
-        return {"total": sum(details.values()), "breakdown": details}
+        # ---------- TOTAL & NORMALISATION ----------
+        raw_score = sum(details.values())          # max = 100
+        seo_score = min(raw_score, 100)
+
+        return {
+            "total": seo_score,
+        
+        }
 
     # ANALYSE COMPLETE
 
@@ -249,8 +275,8 @@ class Parsers:
                 "paragraphes": self.count_heading(),
                 
             }
-
-            result["score_seo"] = self.calculer_score_seo(result)
+            seo_result = self.calculer_score_seo(result)
+            result["score_seo"] = seo_result["total"]
 
             context.close()
             browser.close()

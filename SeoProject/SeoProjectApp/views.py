@@ -35,6 +35,7 @@ def analyzer(request):
             external_links=",".join(result["liens_externes"]),
             images_count=result["nombre_images"],
             images_with_alt=len(result["images_avec_alt"]),
+            seo_score=result["score_seo"],  
         )
 
         return Response(result, status=status.HTTP_200_OK)
@@ -43,3 +44,9 @@ def analyzer(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['GET'])
+def analyser_liste(request):
+    audits = AuditDetails.objects.all().values()
+    return Response(list(audits), status=status.HTTP_200_OK)
