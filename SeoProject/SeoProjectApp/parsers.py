@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime
 import pandas as pd
 import advertools as adv
 from urllib.parse import urlparse, urljoin
@@ -48,11 +49,15 @@ class Parsers:
 
     #  EXTRACTIONS HTML 
 
-    def nombre_liens(self):
-        return len(self.soup.find_all("a"))
-
     def nombre_images(self):
         return len(self.soup.find_all("img"))
+    
+    def images_lazy_loading(self):
+        lazy_images = []
+        for img in self.soup.find_all("img"):
+            if img.get("loading") == "lazy":
+                lazy_images.append(img)
+        return lazy_images
 
     def extract_images_with_alt(self):
         unique_alts = set()
@@ -66,6 +71,47 @@ class Parsers:
                     unique_alts.add(alt)
                     images.append({"alt": alt})
         return images
+    
+    
+    def images_score(self):
+        score = 0
+
+        total_images = self.nombre_images()
+        if total_images == 0:
+            return 0  # aucune image = mauvais SEO
+
+        # ---------- NOMBRE D'IMAGES (20 pts) ----------
+        if total_images >= 3:
+            score += 20
+        elif total_images >= 1:
+            score += 10
+
+        # ---------- ALT (50 pts) ----------
+        images_with_alt = len(self.extract_images_with_alt())
+        alt_ratio = images_with_alt / total_images
+
+        if alt_ratio == 1:
+            score += 50
+        elif alt_ratio >= 0.7:
+            score += 30
+        elif alt_ratio >= 0.3:
+            score += 15
+        elif alt_ratio > 0:
+            score += 5
+
+        # ---------- LAZY LOADING (30 pts) ----------
+        lazy_count = len(self.images_lazy_loading())
+        lazy_ratio = lazy_count / total_images
+
+        if lazy_ratio >= 0.5:
+            score += 30
+        elif lazy_ratio >= 0.3:
+            score += 20
+        elif lazy_ratio >= 0.1:
+            score += 10
+
+        return score
+    
 
     def extract_internal_links(self):
         base_domain = urlparse(self.url).netloc
@@ -96,6 +142,56 @@ class Parsers:
                 external_links.add(full_url)
 
         return list(external_links)
+    
+    def nombre_liens(self):
+      
+       internal_links = self.extract_internal_links()
+       external_links = self.extract_external_links()
+
+       internal_count = len(internal_links)
+       external_count = len(external_links)
+
+       total_links = internal_count + external_count 
+
+       return total_links 
+    
+    def links_score(self):
+        score = 0
+
+        internal_links = self.extract_internal_links()
+        external_links = self.extract_external_links()
+
+        internal_count = len(internal_links)
+        external_count = len(external_links)
+        total_links = internal_count + external_count
+
+        if total_links == 0:
+            return 0
+
+        # ---------- LIENS INTERNES (50 pts) ----------
+        if internal_count >= 10:
+            score += 50
+        elif internal_count >= 5:
+            score += 30
+        elif internal_count >= 1:
+            score += 15
+
+        # ---------- LIENS EXTERNES (30 pts) ----------
+        if 1 <= external_count <= 5:
+            score += 30
+        elif external_count > 5:
+            score += 20
+
+        # ---------- ÉQUILIBRE (20 pts) ----------
+        external_ratio = external_count / total_links
+
+        if 0.10 <= external_ratio <= 0.40:
+            score += 20
+        elif 0.05 <= external_ratio <= 0.60:
+            score += 10
+
+        return score
+
 
     def title(self):
         tag = self.soup.find("title")
@@ -110,12 +206,41 @@ class Parsers:
 
     def meta_description_length(self):
         return len(self.meta_description() or "")
+    
+    def meta_score(self):
+        score = 0
+
+        # ----- TITLE -----
+        title_len = self.title_length()
+
+        if 50 <= title_len <= 60:
+            score += 50
+        elif 40 <= title_len <= 70:
+            score += 30
+        elif title_len > 0:
+            score += 10
+
+        # ----- META DESCRIPTION -----
+        meta_len = self.meta_description_length()
+
+        if 140 <= meta_len <= 160:
+            score += 50
+        elif 120 <= meta_len <= 170:
+            score += 30
+        elif meta_len > 0:
+            score += 10
+
+        return score
+        
 
     def count_heading(self):
         return {
             "h1_count": len(self.soup.find_all("h1")),
             "h2_count": len(self.soup.find_all("h2")),
             "h3_count": len(self.soup.find_all("h3")),
+            "h4_count": len(self.soup.find_all("h4")),
+            "h5_count": len(self.soup.find_all("h5")),
+            "h6_count": len(self.soup.find_all("h6")),
         }
 
     # TEXTE & MOTS-CLÉS 
@@ -178,56 +303,158 @@ class Parsers:
 
     # SCORE SEO 
     def calculer_score_seo(self, data):
-        details = {
-            "technique": 0,
-            "contenu": 0,
-            "structure": 0
-        }
+        score = 0
+        details = {}
 
-        # ---------- TECHNIQUE (max 40) ----------
+        # ---------- TECHNIQUE (25) ----------
+        technique = 0
+
         if data.get("is_secure"):
-            details["technique"] += 10
+            technique += 10
 
-        temps = data.get("temps_reponse_ms", 2000)
+        temps = data.get("temps_reponse_ms", 3000)
         if temps < 500:
-            details["technique"] += 30
+            technique += 15
         elif temps < 1000:
-            details["technique"] += 20
+            technique += 10
         elif temps < 2000:
-            details["technique"] += 10
+            technique += 5
 
-        # ---------- STRUCTURE (max 30) ----------
-        h1_count = data.get("paragraphes", {}).get("h1_count", 0)
-        if h1_count == 1:
-            details["structure"] += 20
-        elif h1_count > 1:
-            details["structure"] += 10
+        technique = min(technique, 25)
+        score += technique
+        details["technique"] = technique
 
-        h2_count = data.get("paragraphes", {}).get("h2_count", 0)
-        if h2_count >= 2:
-            details["structure"] += 10
+        # ---------- META SEO (20) ----------
+        meta_score = data.get("meta_seo_score", 0)
+        meta_final = min(meta_score * 0.20, 20)
+        score += meta_final
+        details["meta"] = round(meta_final)
 
-        # ---------- CONTENU (max 30) ----------
-        word_count = data.get("word_count", 0)
-        if word_count > 300:
-            details["contenu"] += 10
-        if word_count > 600:
-            details["contenu"] += 10
+        # ---------- CONTENU (20) ----------
+        contenu = 0
+        words = data.get("word_count", 0)
+
+        if words >= 600:
+            contenu += 10
+        elif words >= 300:
+            contenu += 5
 
         title = (data.get("titre") or "").lower()
         for kw in data.get("top_keywords", [])[:3]:
             if kw.lower() in title:
-                details["contenu"] += 10
+                contenu += 10
                 break
 
-        # ---------- TOTAL & NORMALISATION ----------
-        raw_score = sum(details.values())          # max = 100
-        seo_score = min(raw_score, 100)
+        contenu = min(contenu, 20)
+        score += contenu
+        details["contenu"] = contenu
+
+        # ---------- IMAGES (15) ----------
+        images_score = data.get("images_seo_score", 0)
+        images_final = min(images_score * 0.15, 15)
+        score += images_final
+        details["images"] = round(images_final)
+
+        # ---------- LIENS (10) ----------
+        links_score = data.get("links_seo_score", 0)
+        links_final = min(links_score * 0.10, 10)
+        score += links_final
+        details["liens"] = round(links_final)
+
+        # ---------- STRUCTURE (10) ----------
+        structure = 0
+        h1 = data.get("paragraphes", {}).get("h1_count", 0)
+        h2 = data.get("paragraphes", {}).get("h2_count", 0)
+
+        if h1 == 1:
+            structure += 5
+        if h2 >= 2:
+            structure += 5
+
+        score += structure
+        details["structure"] = structure
 
         return {
-            "total": seo_score,
-        
+            "total": round(min(score, 100)),
+           
         }
+        
+    def mobile_score(self, data):
+        score = 0
+
+        # ---------- HTTPS (10) ----------
+        if data.get("is_secure"):
+            score += 10
+
+        # ---------- VITESSE (30) ----------
+        temps = data.get("temps_reponse_ms", 3000)
+        if temps < 500:
+            score += 30
+        elif temps < 1000:
+            score += 20
+        elif temps < 2000:
+            score += 10
+
+        # ---------- IMAGES (25) ----------
+        images_score = data.get("images_seo_score", 0)
+        score += min(images_score * 0.25, 25)
+
+        # ---------- META (15) ----------
+        meta_score = data.get("meta_seo_score", 0)
+        score += min(meta_score * 0.15, 15)
+
+        # ---------- LIENS (10) ----------
+        links_score = data.get("links_seo_score", 0)
+        score += min(links_score * 0.10, 10)
+
+        # ---------- TEXTE (10) ----------
+        words = data.get("word_count", 0)
+        if words >= 300:
+            score += 10
+        elif words >= 150:
+            score += 5
+
+        return round(score)
+    
+    def desktop_score(self, data):
+        score = 0
+
+        # ---------- HTTPS (10) ----------
+        if data.get("is_secure"):
+            score += 10
+
+        # ---------- VITESSE (20) ----------
+        temps = data.get("temps_reponse_ms", 3000)
+        if temps < 700:
+            score += 20
+        elif temps < 1500:
+            score += 10
+
+        # ---------- STRUCTURE (20) ----------
+        h1 = data.get("paragraphes", {}).get("h1_count", 0)
+        h2 = data.get("paragraphes", {}).get("h2_count", 0)
+
+        if h1 == 1:
+            score += 10
+        if h2 >= 2:
+            score += 10
+
+        # ---------- META (20) ----------
+        meta_score = data.get("meta_score", 0)
+        score += min(meta_score * 0.20, 20)
+
+        # ---------- LIENS (15) ----------
+        links_score = data.get("links_seo_score", 0)
+        score += min(links_score * 0.15, 15)
+
+        # ---------- CONTENU (15) ----------
+        words = data.get("word_count", 0)
+        if words >= 600:
+            score += 15
+        elif words >= 300:
+            score += 10
+
+        return round(score)
 
     # ANALYSE COMPLETE
 
@@ -267,15 +494,22 @@ class Parsers:
                 "liens_externes": external_links,
                 "nombre_liens_externes": len(external_links),
                 "nombre_images": self.nombre_images(),
+                "images_lazy_loading": self.images_lazy_loading(),
                 "images_avec_alt": self.extract_images_with_alt(),
                 "titre": self.title(),
                 "longueur_titre": self.title_length(),
                 "meta_description": self.meta_description(),
                 "longueur_meta_description": self.meta_description_length(),
+                "meta_seo_score": self.meta_score(),
+                "images_seo_score": self.images_score(),
+                "links_seo_score": self.links_score(),
                 "paragraphes": self.count_heading(),
                 
             }
             seo_result = self.calculer_score_seo(result)
+            result["date_audit"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            result["mobile_score"] = self.mobile_score(result)
+            result["desktop_score"] = self.desktop_score(result)
             result["score_seo"] = seo_result["total"]
 
             context.close()
