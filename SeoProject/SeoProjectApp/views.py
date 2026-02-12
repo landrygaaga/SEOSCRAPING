@@ -28,6 +28,7 @@ def analyzer(request):
             title_length=result["longueur_titre"],
             meta_description=result["meta_description"],
             meta_description_length=result["longueur_meta_description"],
+            nombre_paragraphes=result["nombre_paragraphes"],
             h1_count=result["paragraphes"]["h1_count"],
             h2_count=result["paragraphes"]["h2_count"],
             h3_count=result["paragraphes"]["h3_count"],

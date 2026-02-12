@@ -56,7 +56,11 @@ class Parsers:
         lazy_images = []
         for img in self.soup.find_all("img"):
             if img.get("loading") == "lazy":
-                lazy_images.append(img)
+                # lazy_images.append(img)
+                lazy_images.append({
+                    "src": img.get("src", ""),
+                    "alt": img.get("alt", ""),
+                })
         return lazy_images
 
     def extract_images_with_alt(self):
@@ -242,6 +246,10 @@ class Parsers:
             "h5_count": len(self.soup.find_all("h5")),
             "h6_count": len(self.soup.find_all("h6")),
         }
+    
+    def nombre_paragraphes(self):
+     return len(self.soup.find_all("p"))
+
 
     # TEXTE & MOTS-CLÉS 
 
@@ -504,6 +512,7 @@ class Parsers:
                 "images_seo_score": self.images_score(),
                 "links_seo_score": self.links_score(),
                 "paragraphes": self.count_heading(),
+                "nombre_paragraphes":self.nombre_paragraphes
                 
             }
             seo_result = self.calculer_score_seo(result)

@@ -18,6 +18,7 @@ class AuditDetails(models.Model):
     title_length = models.IntegerField(null=True)
     meta_description = models.TextField(null=True)
     meta_description_length = models.IntegerField(null=True)
+    nombre_paragraphes= models.IntegerField(null=True)
     h1_count = models.IntegerField(null=True)
     h2_count = models.IntegerField(null=True)
     h3_count = models.IntegerField(null=True)
