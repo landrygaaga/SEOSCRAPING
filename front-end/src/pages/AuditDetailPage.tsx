@@ -1186,8 +1186,7 @@ export default function AuditDetailPage() {
               </div>
             )}
           </SectionCard>
-          
-          {/* Pour garder les imports Lucide utilisés */}
+
           <span className="hidden">
             <LinkIcon size={16} />
             <ImageIcon size={16} />
