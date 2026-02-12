@@ -13,7 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-// TYPE COMPLET CORRESPONDANT AU BACKEND
+// TYPE COMPLET CORRESPONDANT AU BACKEND fyuhjokkkkkknjjoj
 type BackendAuditResult = {
   is_secure: boolean;
   http_status: number;
