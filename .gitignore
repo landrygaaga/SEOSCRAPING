@@ -40,3 +40,5 @@ venv/
 SeoProject/venv/
 __pycache__/
 *.pyc
+#base
+db.sqlite3
