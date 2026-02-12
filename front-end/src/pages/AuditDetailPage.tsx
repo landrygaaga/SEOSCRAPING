@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import {
   CheckCircle2,
@@ -10,6 +10,7 @@ import {
   Tag,
   AlertTriangle,
   ListChecks,
+  Loader2,
 } from "lucide-react";
 
 // TYPE COMPLET CORRESPONDANT AU BACKEND
@@ -404,39 +405,63 @@ export default function AuditDetailPage() {
 
   const state = location.state as { url?: string; result?: BackendAuditResult } | null;
 
-  if (!state?.result) {
-    return (
-      <div className="container-page py-12 text-[var(--text)]">
-        Aucun résultat à afficher. Lance un audit depuis la page Audit.
-      </div>
-    );
-  }
+  const needsFetch = Boolean(state?.url && !state?.result);
+  const [isLoading, setIsLoading] = useState(needsFetch);
+  const [error, setError] = useState<string | null>(null);
+  const [rawResult, setRawResult] = useState<BackendAuditResult | null>(state?.result ?? null);
 
-  const data: AuditDetails = useMemo(() => {
-    const r = state.result!;
+  useEffect(() => {
+    const controller = new AbortController();
+
+    if (state?.url && !state?.result) {
+      setIsLoading(true);
+      setError(null);
+      fetch("http://localhost:8000/api/analyser/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: state.url }),
+        signal: controller.signal,
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(`Erreur ${res.status} : ${res.statusText}`);
+          return res.json();
+        })
+        .then((data) => setRawResult(data))
+        .catch((err) => {
+          if (err.name !== "AbortError") setError(err.message ?? "Une erreur est survenue");
+        })
+        .finally(() => setIsLoading(false));
+    }
+
+    return () => controller.abort();
+  }, []);
+
+  const data: AuditDetails | null = useMemo(() => {
+    if (!rawResult) return null;
+    const r = rawResult;
     
     //  FIX: score_seo est un number, pas un objet
-    const global = Number(r.score_seo ?? 0);
+    const global = Number(r?.score_seo ?? 0);
 
     //  FIX: Validation Array pour images_avec_alt
-    const withAlt = Array.isArray(r.images_avec_alt) ? r.images_avec_alt.length : 0;
+    const withAlt = Array.isArray(r?.images_avec_alt) ? r?.images_avec_alt.length : 0;
 
     //  FIX: Lazy loading
-    const lazyLoading = Array.isArray(r.images_lazy_loading) ? r.images_lazy_loading.length : 0;
+    const lazyLoading = Array.isArray(r?.images_lazy_loading) ? r?.images_lazy_loading.length : 0;
 
     // FIX: Liens internes/externes listes complètes
-    const internalList = Array.isArray(r.liens_internes) ? r.liens_internes : [];
-    const externalList = Array.isArray(r.liens_externes) ? r.liens_externes : [];
+    const internalList = Array.isArray(r?.liens_internes) ? r?.liens_internes : [];
+    const externalList = Array.isArray(r?.liens_externes) ? r?.liens_externes : [];
 
     const technicalScore = computeTechnicalScore(r);
 
     // FIX: Utiliser la date de l'audit
-    const auditDate = r.date_audit ?? new Date().toISOString();
+    const auditDate = r?.date_audit ?? new Date().toISOString();
 
     // AJOUT : Calcul des données social
-    const socialScore = Number(r.social_score ?? 0);
-    const ogCount = Number(r.og_count ?? 0);
-    const ogMissing = Array.isArray(r.og_missing) ? r.og_missing : [];
+    const socialScore = Number(r?.social_score ?? 0);
+    const ogCount = Number(r?.og_count ?? 0);
+    const ogMissing = Array.isArray(r?.og_missing) ? r?.og_missing : [];
 
     return {
       url: r.url_finale ?? state.url ?? "https://example.com",
@@ -496,7 +521,7 @@ export default function AuditDetailPage() {
       },
 
       technical: {
-        https: Boolean(r.is_secure),
+        https: Boolean(r?.is_secure),
         responseTimeMs: Number(r.temps_reponse_ms ?? 0),
         httpStatus: Number(r.http_status ?? 0),
         pageSizeKB: Number(r.taille_page_octets ?? 0) / 1024,
@@ -513,7 +538,29 @@ export default function AuditDetailPage() {
         missing: ogMissing,
       },
     };
-  }, [state]);
+  }, [rawResult]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--muted)]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container-page py-12 text-red-500">{error}</div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="container-page py-12 text-[var(--text)]">
+        Aucun résultat à afficher. Lance un audit depuis la page Audit.
+      </div>
+    );
+  }
 
   /* HeadingState (H1) */
   const h1Count = Number(data.headings.h1);

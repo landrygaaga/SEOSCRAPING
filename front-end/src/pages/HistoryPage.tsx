@@ -1,12 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { listAudits } from "@/features/audit/api/auditApi";
+import { useNavigate } from "react-router-dom";
+import { listAudits, mapListItemToDetails } from "@/features/audit/api/auditApi";
 
 export default function HistoryPage() {
+  const navigate = useNavigate();
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["audits", 1],
     queryFn: () => listAudits(1),
   });
+
+  function openPreview(item: any) {
+    const result = mapListItemToDetails(item);
+
+    // ✅ fallback pour le refresh
+    localStorage.setItem("audit_preview", JSON.stringify({ url: item.url, result }));
+
+    navigate("/audit/preview", {
+      state: { url: item.url, result },
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -32,16 +45,21 @@ export default function HistoryPage() {
             </thead>
             <tbody>
               {data.results.map((a: any) => (
-                <tr key={String(a.id)} className="border-t hover:bg-gray-50">
+                <tr
+                  key={a.detail_id ?? a.id ?? a.url}
+                  onClick={() => openPreview(a)}
+                  style={{ cursor: "pointer" }}
+                  className="hover:bg-black/5"
+                >
                   <td className="p-3 max-w-[420px]">
-                    <Link className="font-medium underline underline-offset-2 break-all" to={`/historique/${a.id}`}>
+                    <span className="font-medium underline underline-offset-2 break-all">
                       {a.url}
-                    </Link>
+                    </span>
                   </td>
-                  <td className="p-3">{new Date(a.date).toLocaleString()}</td>
+                  <td className="p-3">{new Date(a.date_audit ?? a.date).toLocaleString()}</td>
                   <td className="p-3">{a.response_time} ms</td>
                   <td className="p-3">{a.word_count}</td>
-                  <td className="p-3">{a.seo_score_global}</td>
+                  <td className="p-3">{a.seo_score}</td>
                 </tr>
               ))}
             </tbody>
