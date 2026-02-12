@@ -34,3 +34,9 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+
+# Python
+venv/
+SeoProject/venv/
+__pycache__/
+*.pyc
