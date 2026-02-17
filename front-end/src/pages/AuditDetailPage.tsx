@@ -13,7 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-// TYPE COMPLET CORRESPONDANT AU BACKEND fyuhjokkkkkknjjoj
+// TYPE COMPLET CORRESPONDANT AU BACKEND 
 type BackendAuditResult = {
   is_secure: boolean;
   http_status: number;
@@ -850,27 +850,41 @@ export default function AuditDetailPage() {
               Minimum recommandé : 300 mots (idéalement 1000+) pour bien se positionner.
             </p>
 
-            <div className="mt-6 rounded-2xl bg-black/5 dark:bg-white/5 p-8 text-center">
-              <div
-                className="text-6xl font-extrabold"
-                style={{
-                  color:
-                    data.content.words >= 1000
-                      ? "rgb(34,197,94)"
-                      : data.content.words >= 300
-                      ? "rgb(234,179,8)"
-                      : "rgb(239,68,68)",
-                }}
-              >
-                {data.content.words}
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              {/* Mots */}
+              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-8 text-center">
+                <div
+                  className="text-6xl font-extrabold"
+                  style={{
+                    color:
+                      data.content.words >= 1000
+                        ? "rgb(34,197,94)"
+                        : data.content.words >= 300
+                        ? "rgb(234,179,8)"
+                        : "rgb(239,68,68)",
+                  }}
+                >
+                  {data.content.words}
+                </div>
+                <div className="mt-2 text-sm text-[var(--muted)]">Mots</div>
+                <div className="mt-4 text-xs text-[var(--muted)]">
+                  {data.content.words >= 1000
+                    ? "✓ Contenu riche"
+                    : data.content.words >= 300
+                    ? "⚠️ Contenu moyen"
+                    : "✗ Contenu léger"}
+                </div>
               </div>
-              <div className="mt-2 text-sm text-[var(--muted)]">Mots</div>
-              <div className="mt-4 text-xs text-[var(--muted)]">
-                {data.content.words >= 1000
-                  ? "✓ Contenu riche"
-                  : data.content.words >= 300
-                  ? "⚠️ Contenu moyen"
-                  : "✗ Contenu léger"}
+
+              {/* Paragraphes */}
+              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-8 text-center">
+                <div className="text-6xl font-extrabold text-white">
+                  {data.content.paragraphs}
+                </div>
+                <div className="mt-2 text-sm text-[var(--muted)]">Paragraphes</div>
+                <div className="mt-4 text-xs text-[var(--muted)]">
+                  Structure du texte
+                </div>
               </div>
             </div>
           </SectionCard>

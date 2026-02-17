@@ -13,7 +13,7 @@ export default function HistoryPage() {
   function openPreview(item: any) {
     const result = mapListItemToDetails(item);
 
-    // ✅ fallback pour le refresh
+    // fallback pour le refresh
     localStorage.setItem("audit_preview", JSON.stringify({ url: item.url, result }));
 
     navigate("/audit/preview", {
