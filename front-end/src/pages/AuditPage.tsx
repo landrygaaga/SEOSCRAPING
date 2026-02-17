@@ -87,6 +87,7 @@ export default function AuditPage() {
 
         <div className="mx-auto max-w-6xl px-4">
           <form id="scan-form" className="card p-8 max-w-2xl mx-auto text-left">
+            {/*
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="form-label">
@@ -102,6 +103,7 @@ export default function AuditPage() {
                 <input className="form-input" placeholder="" />
               </div>
             </div>
+            */}
 
             <div className="mt-6">
               <label className="form-label">
