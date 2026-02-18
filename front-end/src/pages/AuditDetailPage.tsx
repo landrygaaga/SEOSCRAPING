@@ -111,7 +111,7 @@ type AuditDetails = {
     severity: "low" | "medium" | "high";
     detail?: string;
   }>;
-  // AJOUT
+  // AJOUT OKOKO
   social: { 
     score: number; 
     ogCount: number; 
