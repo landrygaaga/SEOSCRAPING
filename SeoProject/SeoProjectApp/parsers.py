@@ -512,7 +512,7 @@ class Parsers:
                 "images_seo_score": self.images_score(),
                 "links_seo_score": self.links_score(),
                 "paragraphes": self.count_heading(),
-                "nombre_paragraphes":self.nombre_paragraphes
+                "nombre_paragraphes":self.nombre_paragraphes()
                 
             }
             seo_result = self.calculer_score_seo(result)
