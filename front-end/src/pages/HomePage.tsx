@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import HomeStatsMarquee from "@/pages/home/HomeStatsMarquee";
-
 import { CirclePlay } from 'lucide-react';
 
 export default function HomePage() {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { useRef } from "react";
 import {
   CheckCircle2,
   Link as LinkIcon,
@@ -10,7 +11,6 @@ import {
   Tag,
   AlertTriangle,
   ListChecks,
-  Loader2,
 } from "lucide-react";
 
 // TYPE COMPLET CORRESPONDANT AU BACKEND 
@@ -34,6 +34,7 @@ type BackendAuditResult = {
   longueur_titre: number;
   meta_description: string | null;
   longueur_meta_description: number;
+  nombre_paragraphes: number;  // NOUVEAU
   paragraphes: { 
     h1_count: number; 
     h2_count: number; 
@@ -410,6 +411,11 @@ export default function AuditDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [rawResult, setRawResult] = useState<BackendAuditResult | null>(state?.result ?? null);
 
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef(0);
+  const doneRef = useRef(false);
+
+  // Modifiez votre useEffect existant pour marquer quand les données arrivent
   useEffect(() => {
     const controller = new AbortController();
 
@@ -426,15 +432,46 @@ export default function AuditDetailPage() {
           if (!res.ok) throw new Error(`Erreur ${res.status} : ${res.statusText}`);
           return res.json();
         })
-        .then((data) => setRawResult(data))
-        .catch((err) => {
-          if (err.name !== "AbortError") setError(err.message ?? "Une erreur est survenue");
+        .then((data) => {
+          setRawResult(data);
+          doneRef.current = true; // ← AJOUT IMPORTANT
         })
-        .finally(() => setIsLoading(false));
+        .catch((err) => {
+          if (err.name !== "AbortError") {
+            setError(err.message ?? "Une erreur est survenue");
+            setIsLoading(false);
+          }
+        });
     }
 
     return () => controller.abort();
   }, []);
+
+  // Ajoute useEffect pour gérer la progression animée
+  useEffect(() => {
+    if (!needsFetch) return;
+
+    const interval = setInterval(() => {
+      if (doneRef.current) {
+        // Rush to 100 when data is ready
+        progressRef.current = Math.min(100, progressRef.current + 4);
+        setProgress(progressRef.current);
+        if (progressRef.current >= 100) {
+          clearInterval(interval);
+          setTimeout(() => setIsLoading(false), 400);
+        }
+      } else {
+        // Slow crawl
+        const current = progressRef.current;
+        const speed =
+          current < 30 ? 2.5 : current < 65 ? 1.2 : current < 88 ? 0.35 : 0;
+        progressRef.current = Math.min(88, current + speed);
+        setProgress(progressRef.current);
+      }
+    }, 80);
+
+    return () => clearInterval(interval);
+  }, [needsFetch]);
 
   const data: AuditDetails | null = useMemo(() => {
     if (!rawResult) return null;
@@ -497,6 +534,7 @@ export default function AuditDetailPage() {
 
       content: {
         words: Number(r.word_count ?? 0),
+        paragraphs: Number(r.nombre_paragraphes ?? 0),  // NOUVEAU
       },
 
       // AJOUT: Scores spécifiques du backend
@@ -542,8 +580,145 @@ export default function AuditDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--muted)]" />
+      <div
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden"
+        style={{ background: "var(--bg)" }}
+      >
+        {/* Ambient glow */}
+        <div
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(700px 500px at 50% 40%, rgba(180,83,42,0.13), transparent 70%)",
+          }}
+        />
+
+        {/* Animated ring */}
+        <div className="relative flex items-center justify-center">
+          {/* Outer slow spin */}
+          <svg
+            className="absolute"
+            width="140"
+            height="140"
+            viewBox="0 0 140 140"
+            style={{ animation: "spin 3s linear infinite" }}
+          >
+            <circle
+              cx="70"
+              cy="70"
+              r="62"
+              fill="none"
+              stroke="rgba(180,83,42,0.18)"
+              strokeWidth="2"
+              strokeDasharray="8 6"
+            />
+          </svg>
+
+          {/* Progress ring */}
+          <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: "rotate(-90deg)" }}>
+            <circle
+              cx="70"
+              cy="70"
+              r="54"
+              fill="none"
+              stroke="rgba(180,83,42,0.12)"
+              strokeWidth="6"
+            />
+            <circle
+              cx="70"
+              cy="70"
+              r="54"
+              fill="none"
+              stroke="var(--accent)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 54}`}
+              strokeDashoffset={`${2 * Math.PI * 54 * (1 - progress / 100)}`}
+              style={{ transition: "stroke-dashoffset 0.2s ease" }}
+            />
+          </svg>
+
+          {/* Center dot with pulse */}
+          <div className="absolute flex items-center justify-center">
+            <span
+              className="h-5 w-5 rounded-full"
+              style={{
+                background: "var(--accent)",
+                boxShadow: "0 0 0 0 rgba(180,83,42,0.5)",
+                animation: "pulse-ring 1.6s ease-out infinite",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Text */}
+        <div className="mt-10 text-center">
+          <h1 className="text-3xl font-bold text-[var(--text)]">Analyse en cours...</h1>
+          <p className="mt-3 text-[var(--muted)]">
+            {progress < 30
+              ? "Connexion au serveur..."
+              : progress < 70
+              ? "Analyse du contenu en cours..."
+              : "Génération du rapport..."}
+          </p>
+        </div>
+
+        {/* Progress bar + steps */}
+        <div className="mt-10 w-full max-w-sm px-4">
+          {/* Bar */}
+          <div
+            className="relative h-2.5 w-full rounded-full overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.08)" }}
+          >
+            <div
+              className="absolute left-0 top-0 h-full rounded-full"
+              style={{
+                width: `${Math.min(100, Math.max(0, progress))}%`,
+                background: "linear-gradient(90deg, rgba(180,83,42,0.7), var(--accent))",
+                transition: "width 0.15s ease",
+              }}
+            />
+          </div>
+
+          {/* Step labels */}
+          <div className="mt-3 flex justify-between">
+            {["Démarrage", "Analyse", "Finalisation"].map((label, i) => (
+              <span
+                key={label}
+                className="text-xs transition-colors duration-300"
+                style={{
+                  color:
+                    (i === 0 && progress >= 0) ||
+                    (i === 1 && progress >= 30) ||
+                    (i === 2 && progress >= 70)
+                      ? "var(--accent)"
+                      : "var(--muted)",
+                  fontWeight:
+                    (i === 0 && progress < 30) ||
+                    (i === 1 && progress >= 30 && progress < 70) ||
+                    (i === 2 && progress >= 70)
+                      ? 600
+                      : 400,
+                }}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Keyframes */}
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+          }
+          @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0   rgba(180,83,42,0.55); }
+            70%  { box-shadow: 0 0 0 14px rgba(180,83,42,0); }
+            100% { box-shadow: 0 0 0 0   rgba(180,83,42,0); }
+          }
+        `}</style>
       </div>
     );
   }
