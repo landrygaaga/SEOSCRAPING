@@ -453,7 +453,7 @@ export default function AuditDetailPage() {
 
     const interval = setInterval(() => {
       if (doneRef.current) {
-        // Rush to 100 when data is ready
+        // Passez à 100 lorsque les données sont prêtes.
         progressRef.current = Math.min(100, progressRef.current + 4);
         setProgress(progressRef.current);
         if (progressRef.current >= 100) {
@@ -461,7 +461,7 @@ export default function AuditDetailPage() {
           setTimeout(() => setIsLoading(false), 400);
         }
       } else {
-        // Slow crawl
+        // Slow crawl : Ralentissement
         const current = progressRef.current;
         const speed =
           current < 30 ? 2.5 : current < 65 ? 1.2 : current < 88 ? 0.35 : 0;
@@ -534,7 +534,7 @@ export default function AuditDetailPage() {
 
       content: {
         words: Number(r.word_count ?? 0),
-        paragraphs: Number(r.nombre_paragraphes ?? 0),  // NOUVEAU
+        paragraphs: Number(r.nombre_paragraphes ?? 0), // NOUVEAU
       },
 
       // AJOUT: Scores spécifiques du backend
@@ -584,7 +584,7 @@ export default function AuditDetailPage() {
         className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden"
         style={{ background: "var(--bg)" }}
       >
-        {/* Ambient glow */}
+        {/* Lueur ambiante */}
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
@@ -593,9 +593,9 @@ export default function AuditDetailPage() {
           }}
         />
 
-        {/* Animated ring */}
+        {/* Anneau animé */}
         <div className="relative flex items-center justify-center">
-          {/* Outer slow spin */}
+          {/* Rotation lente extérieure */}
           <svg
             className="absolute"
             width="140"
@@ -614,7 +614,7 @@ export default function AuditDetailPage() {
             />
           </svg>
 
-          {/* Progress ring */}
+          {/* Anneau de progression */}
           <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: "rotate(-90deg)" }}>
             <circle
               cx="70"
@@ -638,7 +638,7 @@ export default function AuditDetailPage() {
             />
           </svg>
 
-          {/* Center dot with pulse */}
+          {/* Point central avec impulsion */}
           <div className="absolute flex items-center justify-center">
             <span
               className="h-5 w-5 rounded-full"
@@ -663,7 +663,7 @@ export default function AuditDetailPage() {
           </p>
         </div>
 
-        {/* Progress bar + steps */}
+        {/* Barre de progression + étapes */}
         <div className="mt-10 w-full max-w-sm px-4">
           {/* Bar */}
           <div
@@ -680,7 +680,7 @@ export default function AuditDetailPage() {
             />
           </div>
 
-          {/* Step labels */}
+          {/* Étiquettes de marche */}
           <div className="mt-3 flex justify-between">
             {["Démarrage", "Analyse", "Finalisation"].map((label, i) => (
               <span
@@ -707,7 +707,7 @@ export default function AuditDetailPage() {
           </div>
         </div>
 
-        {/* Keyframes */}
+        {/* Images clés */}
         <style>{`
           @keyframes spin {
             from { transform: rotate(0deg); }
